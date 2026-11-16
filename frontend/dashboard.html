@@ -4,6 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dashboard | Vundla Finance</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+    <script src="js/dashboard.js" defer></script>
   </head>
   <body>
     <!--Website Header-->
@@ -56,6 +58,25 @@
         <article>
           <h3>Monthly Budget</h3>
           <p>R8,000.00</p>
+        </article>
+      </section>
+
+      <!--Financial Charts section-->
+      <section>
+        <h2>Financial Reports</h2>
+
+        <!--Income vs expenses Chart-->
+        <article>
+          <h3>Income vs Expenses</h3>
+
+          <canvas id="income-expenses-chart"></canvas>
+        </article>
+
+        <!--Spending by category Chart-->
+        <article>
+          <h3>Spending by Category</h3>
+
+          <canvas id="category-spending-chart"></canvas>
         </article>
       </section>
     </main>
