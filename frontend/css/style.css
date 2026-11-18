@@ -168,3 +168,68 @@ body {
   color: #777777;
   font-size: 13px;
 }
+
+/* 9. Tablet Responsive Design */
+
+@media (max-width: 900px) {
+  .financial-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .financial-charts {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 10. Mobile Responsive design */
+
+@media (max-width: 600px) {
+
+  /* Sidebar becomes a horizontal navigation bar */
+  .sidebar {
+    position: static;
+    width: 100%;
+    min-height: auto;
+    padding; 15px;
+  }
+
+  .sidebar-nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .nav-link {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
+  /* Remove the space reserved for the desktop sidebar */
+  .site-header,
+  .dashboard-main,
+  .site-footer {
+    margin-left: 0;
+    padding: 20px;
+  }
+
+  /* Summary cards appear in one column */
+  .financial-summary {
+    grid-template-columns: 1fr;
+  }
+
+  /* Reduce card padding on smaller screens */
+  .summary-card,
+  .chart-card {
+    padding: 18px;
+  }
+
+  /* Make the dashboard title smaller */
+  .site-header h1 {
+    font-size: 20px;
+  }
+
+  /* Allow the table to scroll horizontally */
+  .transactions-table {
+    overflow-x: auto;
+  }
+}
