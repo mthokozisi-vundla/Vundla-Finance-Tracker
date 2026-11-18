@@ -6,26 +6,27 @@
     <title>Dashboard | Vundla Finance</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
     <script src="js/dashboard.js" defer></script>
+    <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
     <!--Website Header-->
-    <header>
+    <header class="site-header">
       <h1>Vundla Finance</h1>
     </header>
 
     <!--Dashboard Sidebar-->
-    <aside>
-      <nav>
-        <a href="dashboard.html">Dashboard</a>
-        <a href="transactional.html">Transactions</a>
-        <a href="budgets.html">Budgets</a>
-        <a href="#">Categories</a>
-        <a href="index.html">Logout</a>
+    <aside class="sidebar">
+      <nav class="sidebar-nav">
+        <a class="nav-link" href="dashboard.html">Dashboard</a>
+        <a class="nav-link" href="transactional.html">Transactions</a>
+        <a class="nav-link" href="budgets.html">Budgets</a>
+        <a class="nav-link" href="#">Categories</a>
+        <a class="nav-link" href="index.html">Logout</a>
       </nav>
     </aside>
 
     <!--Main Dashboard Content-->
-    <main>
+    <main class="dashboard-main">
       <!--Dashboard Welcome-->
       <section>
         <h2>Dashboard Overview</h2>
@@ -33,29 +34,29 @@
       </section>
 
       <!--Financial Summary Section-->
-      <section>
+      <section class="financial-summary">
         <h2>Financial Summary</h2>
 
         <!--Total Income Card-->
-        <article>
+        <article class="summary-card">
           <h3>Total Income</h3>
           <p>R12,000.00</p>
         </article>
 
         <!--Total Expenses Card-->
-        <article>
+        <article class="summary-card">
           <h3>Total Expenses</h3>
           <p>R4,500.00</p>
         </article>
 
         <!--Remaining Balance Card-->
-        <article>
+        <article class="summary-card">
           <h3>Remaining Balance</h3>
           <p>R7,500.00</p>
         </article>
 
         <!--Monthly Budget Card-->
-        <article>
+        <article class="summary-card">
           <h3>Monthly Budget</h3>
           <p>R8,000.00</p>
         </article>
@@ -79,10 +80,54 @@
           <canvas id="category-spending-chart"></canvas>
         </article>
       </section>
+      <!--Recent Transactions Section-->
+      <section class="recent-transactions">
+        <h2>Recent Transactions</h2>
+
+        <div class="transactions-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th>Category</th>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr>
+                <td>Monthly Salary</td>
+                <td>Salary</td>
+                <td>2026-11-01</td>
+                <td>Income</td>
+                <td>R12,000.00</td>
+              </tr>
+
+              <tr>
+                <td>Groceries</td>
+                <td>Food</td>
+                <td>2026-11-05</td>
+                <td>Expense</td>
+                <td>R1,500.00</td>
+              </tr>
+
+              <tr>
+                <td>Electricity</td>
+                <td>Utilities</td>
+                <td>2026-11-08</td>
+                <td>Expense</td>
+                <td>R800.00</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
     </main>
 
     <!--Website Footer-->
-    <footer>
+    <footer class="site-footer">
       <p>&copy; 2026 Vundla Finance. All rights reserved.</p>
     </footer>
   </body>
