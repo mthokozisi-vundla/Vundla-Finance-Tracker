@@ -1,0 +1,17 @@
+# Python virtual environments
+backend/venv/
+venv/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+
+# Environment variables and secrets
+.env
+
+# Testing and development
+.pytest_cache/
+.mypy_cache/
+
+# VS Code
+.vscode/
