@@ -308,17 +308,47 @@ def create_category(
 
 
 @app.get("/categories")
-def get_categories(db: Session = Depends(get_db)):
-    categories = db.query(CategoryModel).all()
+def get_categories(
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    categories = db.query(CategoryModel).filter(
+        CategoryModel.user_id == current_user.id
+    ).all()
 
     return categories
+
 
 
 @app.get("/categories/{category_id}")
 def get_category(
     category_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
 ):
+    category = db.query(CategoryModel).filter(
+        CategoryModel.id == category_id,
+        CategoryModel.user_id == current_user.id
+    ).first()
+
+    if category is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Category not found"
+        )
+
+    return category
+
+
+
+@app.get("/categories/{category_id}")
+def get_category(
+    category_id: int,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    db: Session = Depends(get_db)
+
     category = db.query(CategoryModel).filter(
         CategoryModel.id == category_id
     ).first()
@@ -329,18 +359,70 @@ def get_category(
     return category
 
 
+@app.delete("/categories/{category_id}")
+def delete_category(
+    category_id: int,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    category = db.query(CategoryModel).filter(
+        CategoryModel.id == category_id,
+        CategoryModel.user_id == current_user.id
+    ).first()
+
+    if category is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Category not found"
+        )
+
+    # Check whether transactions use this category
+    transaction = db.query(TransactionModel).filter(
+        TransactionModel.category_id == category_id
+    ).first()
+
+    if transaction is not None:
+        raise HTTPException(
+            status_code=409,
+            detail="Cannot delete category because it has transactions"
+        )
+
+    # Check whether budgets use this category
+    budget = db.query(BudgetModel).filter(
+        BudgetModel.category_id == category_id
+    ).first()
+
+    if budget is not None:
+        raise HTTPException(
+            status_code=409,
+            detail="Cannot delete category because it has budgets"
+        )
+
+    db.delete(category)
+    db.commit()
+
+    return {
+        "message": "Category deleted successfully"
+    }
+
+
 @app.put("/categories/{category_id}")
 def update_category(
     category_id: int,
     category_data: CategoryCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
 ):
     category = db.query(CategoryModel).filter(
-        CategoryModel.id == category_id
+        CategoryModel.id == category_id,
+        CategoryModel.user_id == current_user.id
     ).first()
 
     if category is None:
-        return {"message": "Category not found"}
+        raise HTTPException(
+            status_code=404,
+            detail="Category not found"
+        )
 
     category.name = category_data.name
     category.type = category_data.type
@@ -353,25 +435,6 @@ def update_category(
         "category": category.id
     }
 
-
-@app.delete("/categories/{category_id}")
-def delete_category(
-    category_id: int,
-    db: Session = Depends(get_db)
-):
-    category = db.query(CategoryModel).filter(
-        CategoryModel.id == category_id
-    ).first()
-
-    if category is None:
-        return {"message": "Category not found"}
-
-    db.delete(category)
-    db.commit()
-
-    return {
-        "message": "Category deleted successfully"
-    }
 
 
 @app.post("/budgets")
