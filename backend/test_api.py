@@ -886,3 +886,16 @@ def test_user_cannot_delete_another_users_budget(client):
     # Verify access is denied
     assert response.status_code == 404
     assert response.json()["detail"] == "Budget not found"
+
+def test_access_with_invalid_token(client):
+    headers = {
+        "Authorization": "Bearer invalid.token.here"
+    }
+
+    response = client.get(
+        "/transactions",
+        headers=headers
+    )
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Invalid or expired token"
