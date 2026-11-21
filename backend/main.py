@@ -470,11 +470,24 @@ def create_budget(
     db: Session = Depends(get_db),
     current_user: UserModel = Depends(get_current_user)
 ):
+    # Check whether the category belongs to this user
+    category = db.query(CategoryModel).filter(
+        CategoryModel.id == budget.category_id,
+        CategoryModel.user_id == current_user.id
+    ).first()
+
+    if category is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Category not found"
+        )
+
+    # Create the budget
     new_budget = BudgetModel(
         amount=budget.amount,
         month=budget.month,
         year=budget.year,
-        user_id=1,
+        user_id=current_user.id,
         category_id=budget.category_id
     )
 
@@ -489,23 +502,32 @@ def create_budget(
 
 
 @app.get("/budgets")
-def get_budgets(db: Session = Depends(get_db)):
-    budgets = db.query(BudgetModel).all()
+def get_budgets(
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    budgets = db.query(BudgetModel).filter(
+        BudgetModel.user_id == current_user.id
+    ).all()
 
     return budgets
-
 
 @app.get("/budgets/{budget_id}")
 def get_budget(
     budget_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
 ):
     budget = db.query(BudgetModel).filter(
-        BudgetModel.id == budget_id
+        BudgetModel.id == budget_id,
+        BudgetModel.user_id == current_user.id
     ).first()
 
     if budget is None:
-        return {"message": "Budget not found"}
+        raise HTTPException(
+            status_code=404,
+            detail="Budget not found"
+        )
 
     return budget
 
@@ -513,15 +535,34 @@ def get_budget(
 def update_budget(
     budget_id: int,
     budget: BudgetCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
 ):
+    # Find the budget and check ownership
     existing_budget = db.query(BudgetModel).filter(
-        BudgetModel.id == budget_id
+        BudgetModel.id == budget_id,
+        BudgetModel.user_id == current_user.id
     ).first()
 
     if existing_budget is None:
-        return {"message": "Budget not found"}
+        raise HTTPException(
+            status_code=404,
+            detail="Budget not found"
+        )
 
+    # Check whether the new category belongs to this user
+    category = db.query(CategoryModel).filter(
+        CategoryModel.id == budget.category_id,
+        CategoryModel.user_id == current_user.id
+    ).first()
+
+    if category is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Category not found"
+        )
+
+    # Update the budget
     existing_budget.amount = budget.amount
     existing_budget.month = budget.month
     existing_budget.year = budget.year
@@ -538,19 +579,26 @@ def update_budget(
 @app.delete("/budgets/{budget_id}")
 def delete_budget(
     budget_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
 ):
+    # Find the budget and check ownership
     budget = db.query(BudgetModel).filter(
-        BudgetModel.id == budget_id
+        BudgetModel.id == budget_id,
+        BudgetModel.user_id == current_user.id
     ).first()
 
     if budget is None:
-        return {"message": "Budget not found"}
+        raise HTTPException(
+            status_code=404,
+            detail="Budget not found"
+        )
 
+    # Delete the budget
     db.delete(budget)
     db.commit()
 
     return {
         "message": "Budget deleted successfully",
         "budget": budget_id
-    }
+    } 
