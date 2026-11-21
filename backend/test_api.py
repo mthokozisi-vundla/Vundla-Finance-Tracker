@@ -903,6 +903,89 @@ def test_access_with_invalid_token(client):
     assert response.status_code == 401
     assert response.json()["detail"] == "Invalid or expired token"
 
+def test_normal_user_cannot_access_admin_statistics(client):
+    # Register a normal user
+    client.post(
+        "/register",
+        json={
+            "name": "Normal User",
+            "email": "normal@example.com",
+            "password": "password123"
+        }
+    )
+
+    # Log in as the normal user
+    login_response = client.post(
+        "/login",
+        json={
+            "email": "normal@example.com",
+            "password": "password123"
+        }
+    )
+
+    token = login_response.json()["access_token"]
+
+    # Try to access admin statistics
+    headers = {
+        "Authorization": f"Bearer {token}"
+    }
+
+    response = client.get(
+        "/admin/statistics",
+        headers=headers
+    )
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Admin access required"
+
+def test_admin_can_access_admin_statistics(client, db):
+    # Register a user
+    client.post(
+        "/register",
+        json={
+            "name": "Admin User",
+            "email": "admin@example.com",
+            "password": "password123"
+        }
+    )
+
+    # Change the user's role to Admin
+    from models import User
+
+    admin_user = db.query(User).filter(
+        User.email == "admin@example.com"
+    ).first()
+
+    admin_user.role = "Admin"
+    db.commit()
+
+    # Log in as Admin
+    login_response = client.post(
+        "/login",
+        json={
+            "email": "admin@example.com",
+            "password": "password123"
+        }
+    )
+
+    token = login_response.json()["access_token"]
+
+    headers = {
+        "Authorization": f"Bearer {token}"
+    }
+
+    # Access admin statistics
+    response = client.get(
+        "/admin/statistics",
+        headers=headers
+    )
+
+    assert response.status_code == 200
+    assert "total_users" in response.json()
+    assert "total_transactions" in response.json()
+    assert "total_categories" in response.json()
+    assert "total_budgets" in response.json()
+
 def test_access_with_expired_token(client):
     # Create a token that has already expired
     expired_token = create_access_token(

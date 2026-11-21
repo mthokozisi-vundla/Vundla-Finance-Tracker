@@ -13,6 +13,7 @@ from models import (
 from security import hash_password, verify_password
 from auth import create_access_token, verify_access_token
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy import func
 
 security = HTTPBearer()
 
@@ -90,6 +91,23 @@ def admin_test(
     current_user: UserModel = Depends(get_admin_user)
 ):
     return {"message": "Admin access granted"}
+
+@app.get("/admin/statistics")
+def get_admin_statistics(
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_admin_user)
+):
+    total_users = db.query(func.count(UserModel.id)).scalar()
+    total_transactions = db.query(func.count(TransactionModel.id)).scalar()
+    total_categories = db.query(func.count(CategoryModel.id)).scalar()
+    total_budgets = db.query(func.count(BudgetModel.id)).scalar()
+
+    return {
+        "total_users": total_users,
+        "total_transactions": total_transactions,
+        "total_categories": total_categories,
+        "total_budgets": total_budgets
+    }
 
 
 @app.get("/")
