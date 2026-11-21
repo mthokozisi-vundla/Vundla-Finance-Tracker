@@ -231,11 +231,12 @@ def get_transaction(
     ).first()
 
     if transaction is None:
-        return {"message": "Transaction not found"}
+        raise HTTPException(
+            status_code=404,
+            detail="Transaction not found"
+        )
 
     return transaction
-
-
 
 @app.put("/transactions/{transaction_id}")
 def update_transaction(

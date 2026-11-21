@@ -327,3 +327,88 @@ def test_get_user_transactions(client):
     assert data[0]["description"] == "Taxi fare"
     assert float(data[0]["amount"]) == 50.0
     assert data[0]["type"] == "Expense"
+
+def test_user_cannot_retrieve_another_users_transaction(client):
+    # Create User A
+    user_a = {
+        "name": "User A",
+        "email": "usera@example.com",
+        "password": "Password123"
+    }
+
+    client.post("/register", json=user_a)
+
+    # Log in User A
+    login_a = client.post(
+        "/login",
+        json={
+            "email": user_a["email"],
+            "password": user_a["password"]
+        }
+    )
+
+    token_a = login_a.json()["access_token"]
+
+    headers_a = {
+        "Authorization": f"Bearer {token_a}"
+    }
+
+    # Create a category for User A
+    category_response = client.post(
+        "/categories",
+        json={
+            "name": "Food",
+            "type": "Expense"
+        },
+        headers=headers_a
+    )
+
+    category_id = category_response.json()["category"]
+
+    # Create a transaction for User A
+    transaction_response = client.post(
+        "/transactions",
+        json={
+            "description": "Grocery shopping",
+            "amount": 250,
+            "type": "Expense",
+            "date": "2026-11-21",
+            "category_id": category_id
+        },
+        headers=headers_a
+    )
+
+    transaction_id = transaction_response.json()["transaction"]
+    # Create User B
+    user_b = {
+        "name": "User B",
+        "email": "userb@example.com",
+        "password": "Password123"
+    }
+
+    client.post("/register", json=user_b)
+
+    # Log in User B
+    login_b = client.post(
+        "/login",
+        json={
+            "email": user_b["email"],
+            "password": user_b["password"]
+        }
+    )
+
+    token_b = login_b.json()["access_token"]
+
+    headers_b = {
+        "Authorization": f"Bearer {token_b}"
+    }
+
+    # User B attempts to retrieve User A's transaction
+    response = client.get(
+        f"/transactions/{transaction_id}",
+        headers=headers_b
+    )
+
+    # Verify access is denied
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Transaction not found"
