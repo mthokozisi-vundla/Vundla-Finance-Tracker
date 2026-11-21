@@ -412,3 +412,74 @@ def test_user_cannot_retrieve_another_users_transaction(client):
     # Verify access is denied
     assert response.status_code == 404
     assert response.json()["detail"] == "Transaction not found"
+
+def test_user_cannot_retrieve_another_users_category(client):
+    # Create User A
+    user_a = {
+        "name": "User A",
+        "email": "usera@example.com",
+        "password": "Password123"
+    }
+
+    client.post("/register", json=user_a)
+
+    # Log in User A
+    login_a = client.post(
+        "/login",
+        json={
+            "email": user_a["email"],
+            "password": user_a["password"]
+        }
+    )
+
+    token_a = login_a.json()["access_token"]
+
+    headers_a = {
+        "Authorization": f"Bearer {token_a}"
+    }
+
+    # Create a category for User A
+    category_response = client.post(
+        "/categories",
+        json={
+            "name": "Food",
+            "type": "Expense"
+        },
+        headers=headers_a
+    )
+
+    category_id = category_response.json()["category"]
+
+    # Create User B
+    user_b = {
+        "name": "User B",
+        "email": "userb@example.com",
+        "password": "Password123"
+    }
+
+    client.post("/register", json=user_b)
+
+    # Log in User B
+    login_b = client.post(
+        "/login",
+        json={
+            "email": user_b["email"],
+            "password": user_b["password"]
+        }
+    )
+
+    token_b = login_b.json()["access_token"]
+
+    headers_b = {
+        "Authorization": f"Bearer {token_b}"
+    }
+
+    # User B attempts to retrieve User A's category
+    response = client.get(
+        f"/categories/{category_id}",
+        headers=headers_b
+    )
+
+    # Verify access is denied
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Category not found"
