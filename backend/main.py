@@ -73,6 +73,25 @@ def get_current_user(
 
     return user
 
+def get_admin_user(
+    current_user: UserModel = Depends(get_current_user)
+):
+    # Check whether the user is an admin
+    if current_user.role != "Admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+
+    return current_user
+
+@app.get("/admin/test")
+def admin_test(
+    current_user: UserModel = Depends(get_admin_user)
+):
+    return {"message": "Admin access granted"}
+
+
 @app.get("/")
 def home():
     return {"message": "Welcome to Vundla Finance API"}
