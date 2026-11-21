@@ -367,25 +367,6 @@ def get_category(
     return category
 
 
-
-@app.get("/categories/{category_id}")
-def get_category(
-    category_id: int,
-    db: Session = Depends(get_db),
-    current_user: UserModel = Depends(get_current_user)
-):
-    db: Session = Depends(get_db)
-
-    category = db.query(CategoryModel).filter(
-        CategoryModel.id == category_id
-    ).first()
-
-    if category is None:
-        return {"message": "Category not found"}
-
-    return category
-
-
 @app.delete("/categories/{category_id}")
 def delete_category(
     category_id: int,
