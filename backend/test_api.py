@@ -1,3 +1,6 @@
+from datetime import timedelta
+from auth import create_access_token
+
 
 def test_health_check(client):
     response = client.get("/health")
@@ -897,5 +900,26 @@ def test_access_with_invalid_token(client):
         headers=headers
     )
 
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Invalid or expired token"
+
+def test_access_with_expired_token(client):
+    # Create a token that has already expired
+    expired_token = create_access_token(
+        data={"sub": "1"},
+        expires_delta=timedelta(seconds=-1)
+    )
+
+    headers = {
+        "Authorization": f"Bearer {expired_token}"
+    }
+
+    # Attempt to access a protected endpoint
+    response = client.get(
+        "/transactions",
+        headers=headers
+    )
+
+    # Verify that access is denied
     assert response.status_code == 401
     assert response.json()["detail"] == "Invalid or expired token"
