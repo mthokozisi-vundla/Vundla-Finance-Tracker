@@ -236,23 +236,44 @@ def get_transaction(
     return transaction
 
 
+
 @app.put("/transactions/{transaction_id}")
 def update_transaction(
     transaction_id: int,
     transaction_data: Transaction,
     db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
 ):
+    # Find the transaction and check ownership
     transaction = db.query(TransactionModel).filter(
-        TransactionModel.id == transaction_id
+        TransactionModel.id == transaction_id,
+        TransactionModel.user_id == current_user.id
     ).first()
 
     if transaction is None:
-        return {"message": "Transaction not found"}
+        raise HTTPException(
+            status_code=404,
+            detail="Transaction not found"
+        )
 
+    # Check that the new category belongs to this user
+    category = db.query(CategoryModel).filter(
+        CategoryModel.id == transaction_data.category_id,
+        CategoryModel.user_id == current_user.id
+    ).first()
+
+    if category is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Category not found"
+        )
+
+    # Update transaction information
     transaction.description = transaction_data.description
     transaction.amount = transaction_data.amount
     transaction.type = transaction_data.type
     transaction.date = transaction_data.date
+    transaction.category_id = transaction_data.category_id
 
     db.commit()
     db.refresh(transaction)
@@ -266,22 +287,28 @@ def update_transaction(
 @app.delete("/transactions/{transaction_id}")
 def delete_transaction(
     transaction_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
 ):
+    # Find the transaction and check ownership
     transaction = db.query(TransactionModel).filter(
-        TransactionModel.id == transaction_id
+        TransactionModel.id == transaction_id,
+        TransactionModel.user_id == current_user.id
     ).first()
 
     if transaction is None:
-        return {"message": "Transaction not found"}
+        raise HTTPException(
+            status_code=404,
+            detail="Transaction not found"
+        )
 
+    # Delete the transaction
     db.delete(transaction)
     db.commit()
 
     return {
         "message": "Transaction deleted successfully"
     }
-
 
 
 @app.post("/categories")
