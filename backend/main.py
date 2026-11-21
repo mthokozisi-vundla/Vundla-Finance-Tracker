@@ -1,11 +1,25 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
-from schemas import Transaction, CategoryCreate, BudgetCreate
+from schemas import UserCreate, Transaction, CategoryCreate, BudgetCreate
 from database import get_db
-from models import( Transaction as TransactionModel, Category as CategoryModel, Budget as BudgetModel)
-
+from models import (
+    User as UserModel,
+    Transaction as TransactionModel,
+    Category as CategoryModel,
+    Budget as BudgetModel
+)
+from security import hash_password
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 
 
 @app.get("/")
@@ -15,6 +29,52 @@ def home():
 @app.get("/health")
 def health_check():
     return {"status": "Vundla Finance API is running"}
+
+@app.post("/register", status_code=status.HTTP_201_CREATED)
+def register_user(
+    user: UserCreate,
+    db: Session = Depends(get_db)
+):
+    # Check whether the email is already registered
+    existing_user = db.query(UserModel).filter(
+        UserModel.email == user.email
+    ).first()
+
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Email address is already registered"
+        )
+
+    # Hash the user's password
+    hashed_password = hash_password(user.password)
+
+    # Create the new user
+    new_user = UserModel(
+        name=user.name,
+        email=user.email,
+        hashed_password=hashed_password,
+        role="User"
+    )
+
+    try:
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+
+    except Exception:
+        db.rollback()
+        raise
+
+    return {
+        "message": "Account created successfully",
+        "user": {
+            "id": new_user.id,
+            "name": new_user.name,
+            "email": new_user.email,
+            "role": new_user.role
+        }
+    }
 
 @app.post("/transactions")
 def create_transaction(
