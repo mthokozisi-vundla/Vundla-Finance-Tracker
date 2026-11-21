@@ -12,23 +12,22 @@ class UserLogin(BaseModel):
 
 
 class Transaction(BaseModel):
-    description: str
-    amount: float
-    category_id: int
-    type: str
+    description: str = Field(min_length=2, max_length=255)
+    amount: float = Field(gt=0)
+    category_id: int = Field(gt=0)
+    type: str = Field(pattern="^(Income|Expense)$")
     date: date
 
 
 
 
 class CategoryCreate(BaseModel):
-    name: str
-    type: str
-
+    name: str = Field(min_length=2, max_length=100)
+    type: str = Field(pattern="^(Income|Expense)$")
 
 
 class BudgetCreate(BaseModel):
-    amount: float
-    month: int
-    year: int
-    category_id: int
+    amount: float = Field(gt=0)
+    month: int = Field(ge=1, le=12)
+    year: int = Field(ge=2020, le=2100)
+    category_id: int = Field(gt=0)
