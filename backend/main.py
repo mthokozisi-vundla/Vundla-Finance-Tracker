@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
-from schemas import UserCreate, Transaction, CategoryCreate, BudgetCreate
+from schemas import UserCreate, UserLogin, Transaction, CategoryCreate, BudgetCreate
 from database import get_db
 from models import (
     User as UserModel,
@@ -10,8 +10,13 @@ from models import (
     Category as CategoryModel,
     Budget as BudgetModel
 )
-from security import hash_password
+from security import hash_password, verify_password
+from auth import create_access_token, verify_access_token
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
+
 app = FastAPI()
+security = HTTPBearer()
 
 app.add_middleware(
     CORSMiddleware,
@@ -21,6 +26,51 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db)
+):
+    # Get the token from the request
+    token = credentials.credentials
+
+    # Check whether the token is valid
+    payload = verify_access_token(token)
+
+    if payload is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid or expired token"
+        )
+
+    # Get the user ID stored inside the token
+    user_id = payload.get("sub")
+
+    if user_id is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid token"
+        )
+
+    # Find the user in the database
+    try:
+        user_id = int(user_id)
+    except (TypeError, ValueError):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid user ID in token"
+        )
+
+    user = db.query(UserModel).filter(
+        UserModel.id == user_id
+    ).first()
+
+    if user is None:
+        raise HTTPException(
+            status_code=401,
+            detail="User not found"
+        )
+
+    return user
 
 @app.get("/")
 def home():
@@ -29,6 +79,7 @@ def home():
 @app.get("/health")
 def health_check():
     return {"status": "Vundla Finance API is running"}
+
 
 @app.post("/register", status_code=status.HTTP_201_CREATED)
 def register_user(
@@ -76,6 +127,45 @@ def register_user(
         }
     }
 
+@app.post("/login")
+def login_user(
+    credentials: UserLogin,
+    db: Session = Depends(get_db)
+):
+    # Find the user by email
+    user = db.query(UserModel).filter(
+        UserModel.email == credentials.email
+    ).first()
+
+
+    # Check the password
+    if user is None or not verify_password(
+        credentials.password,
+        user.hashed_password
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+
+    # Create an access token
+    access_token = create_access_token({
+        "sub": str(user.id)
+    })
+
+    # Return the login information
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "role": user.role
+        }
+    }
+
 @app.post("/transactions")
 def create_transaction(
     transaction: Transaction,
@@ -101,8 +191,13 @@ def create_transaction(
 
 
 @app.get("/transactions")
-def get_transactions(db: Session = Depends(get_db)):
-    transactions = db.query(TransactionModel).all()
+def get_transactions(
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    transactions = db.query(TransactionModel).filter(
+        TransactionModel.user_id == current_user.id
+    ).all()
 
     return transactions
 
