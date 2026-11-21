@@ -14,9 +14,10 @@ from security import hash_password, verify_password
 from auth import create_access_token, verify_access_token
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
+security = HTTPBearer()
 
 app = FastAPI()
-security = HTTPBearer()
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -166,18 +167,33 @@ def login_user(
         }
     }
 
+
 @app.post("/transactions")
 def create_transaction(
     transaction: Transaction,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
 ):
+    # Check whether the category exists and belongs to this user
+    category = db.query(CategoryModel).filter(
+        CategoryModel.id == transaction.category_id,
+        CategoryModel.user_id == current_user.id
+    ).first()
+
+    if category is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Category not found"
+        )
+
+    # Create the new transaction
     new_transaction = TransactionModel(
         description=transaction.description,
         amount=transaction.amount,
         type=transaction.type,
         date=transaction.date,
-        user_id=1,
-        category_id=1
+        user_id=current_user.id,
+        category_id=transaction.category_id
     )
 
     db.add(new_transaction)
@@ -188,6 +204,7 @@ def create_transaction(
         "message": "Transaction created successfully",
         "transaction": new_transaction.id
     }
+
 
 
 @app.get("/transactions")
@@ -205,10 +222,12 @@ def get_transactions(
 @app.get("/transactions/{transaction_id}")
 def get_transaction(
     transaction_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
 ):
     transaction = db.query(TransactionModel).filter(
-        TransactionModel.id == transaction_id
+        TransactionModel.id == transaction_id,
+        TransactionModel.user_id == current_user.id
     ).first()
 
     if transaction is None:
@@ -221,7 +240,7 @@ def get_transaction(
 def update_transaction(
     transaction_id: int,
     transaction_data: Transaction,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     transaction = db.query(TransactionModel).filter(
         TransactionModel.id == transaction_id
@@ -264,15 +283,17 @@ def delete_transaction(
     }
 
 
+
 @app.post("/categories")
 def create_category(
     category: CategoryCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
 ):
     new_category = CategoryModel(
         name=category.name,
         type=category.type,
-        user_id=1
+        user_id=current_user.id
     )
 
     db.add(new_category)
@@ -283,6 +304,7 @@ def create_category(
         "message": "Category created successfully",
         "category": new_category.id
     }
+
 
 
 @app.get("/categories")
@@ -355,7 +377,8 @@ def delete_category(
 @app.post("/budgets")
 def create_budget(
     budget: BudgetCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
 ):
     new_budget = BudgetModel(
         amount=budget.amount,

@@ -10,12 +10,14 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
+
 class Transaction(BaseModel):
-    description:str
-    amount:float
-    category:str
-    type:str
-    date:date
+    description: str
+    amount: float
+    category_id: int
+    type: str
+    date: date
+
 
 
 
