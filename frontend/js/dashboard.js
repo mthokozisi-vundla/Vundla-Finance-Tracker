@@ -5,6 +5,41 @@ if (!token) {
   window.location.href = "login.html";
 }
 
+// GET TRANSACTIONS FROM BACKEND
+
+async function getTransactions() {
+  const response = await fetch("http://127.0.0.1:8000/transactions", {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const transactions = await response.json();
+
+  // Get the table body
+  const transactionsList = document.getElementById("transactions-list");
+
+  // Clear the table
+  transactionsList.innerHTML = "";
+
+  // Add each transaction to the table
+  transactions.forEach(function (transaction) {
+    const row = document.createElement("tr");
+
+    row.innerHTML = `
+        <td>${transaction.description}</td>
+        <td>${transaction.category_id}</td>
+        <td>${transaction.date}</td>
+        <td>${transaction.type}</td>
+        <td>R${Number(transaction.amount).toFixed(2)}</td>
+    `;
+
+    transactionsList.appendChild(row);
+  });
+}
+getTransactions();
+
 //------------------
 // 1. Income vs Expense Chart
 //-----------------
