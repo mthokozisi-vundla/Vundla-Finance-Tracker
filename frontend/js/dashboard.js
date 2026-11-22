@@ -1,3 +1,10 @@
+// Check whether the user is logged in
+const token = localStorage.getItem("access_token");
+
+if (!token) {
+  window.location.href = "login.html";
+}
+
 //------------------
 // 1. Income vs Expense Chart
 //-----------------
@@ -67,4 +74,16 @@ const categorySpendingChart = new Chart(categorySpendingContext, {
   options: {
     responsive: true,
   },
+});
+
+// LOGOUT
+
+const logoutLink = document.getElementById("logout-link");
+
+logoutLink.addEventListener("click", function (event) {
+  event.preventDefault();
+
+  localStorage.removeItem("access_token");
+
+  window.location.href = "login.html";
 });

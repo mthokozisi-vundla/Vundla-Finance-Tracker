@@ -14,7 +14,7 @@
     <!--Website Navigation-->
     <nav>
       <a href="index.html">Home</a>
-      <a href="#">Login</a>
+      <a href="login.html">Login</a>
       <a href="#">Register</a>
     </nav>
     <!--Main content-->
@@ -27,7 +27,7 @@
       <section>
         <h2>Create an Account</h2>
 
-        <form>
+        <form id="register-form">
           <div>
             <label for="full-name">Full Name</label>
             <input
@@ -66,6 +66,8 @@
 
           <button type="submit">Create Account</button>
         </form>
+
+        <p id="register-message"></p>
       </section>
       <!--Transaction Form Section-->
       <section>
@@ -133,5 +135,6 @@
     <footer>
       <p>&copy; 2026 Vundla Finance Tracker. All rights reserved.</p>
     </footer>
+    <script src="js/auth.js"></script>
   </body>
 </html>

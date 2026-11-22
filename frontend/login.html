@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login | Vundla Finance</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+
+  <body>
+    <header>
+      <h1>Vundla Finance</h1>
+    </header>
+
+    <main>
+      <section>
+        <h2>Welcome Back</h2>
+        <p>Log in to manage your finances.</p>
+
+        <form id="login-form">
+          <div>
+            <label for="login-email">Email Address</label>
+            <input
+              type="email"
+              id="login-email"
+              name="email"
+              placeholder="Enter your email"
+              required
+            />
+          </div>
+
+          <div>
+            <label for="login-password">Password</label>
+            <input
+              type="password"
+              id="login-password"
+              name="password"
+              placeholder="Enter your password"
+              required
+            />
+          </div>
+
+          <button type="submit">Login</button>
+        </form>
+
+        <p id="login-message"></p>
+
+        <p>
+          Don't have an account?
+          <a href="index.html">Register here</a>
+        </p>
+      </section>
+    </main>
+
+    <footer>
+      <p>&copy; 2026 Vundla Finance. All rights reserved.</p>
+    </footer>
+
+    <script src="js/auth.js"></script>
+  </body>
+</html>
