@@ -48,6 +48,19 @@ async function getTransactions() {
 
     const categories = await categoryResponse.json();
 
+    // Get the category dropdown
+    const categoryDropdown = document.getElementById("category");
+
+    // Add categories from the database
+    categories.forEach(function (category) {
+      const option = document.createElement("option");
+
+      option.value = category.id;
+      option.textContent = category.name;
+
+      categoryDropdown.appendChild(option);
+    });
+
     // ========================================
     // 3. PREPARE MONTHLY TOTALS
     // ========================================
@@ -254,7 +267,94 @@ async function getTransactions() {
 getTransactions();
 
 // ========================================
-// 9. LOGOUT
+// 9. SHOW AND HIDE TRANSACTION FORM
+// ========================================
+
+// Get the button and form
+const addTransactionButton = document.getElementById("add-transaction-btn");
+
+const transactionForm = document.getElementById("transaction-form");
+
+const cancelTransactionButton = document.getElementById(
+  "cancel-transaction-btn",
+);
+
+// Show the form when Add Transaction is clicked
+addTransactionButton.addEventListener("click", function () {
+  transactionForm.style.display = "block";
+});
+
+// Hide the form when Cancel is clicked
+cancelTransactionButton.addEventListener("click", function () {
+  transactionForm.style.display = "none";
+});
+
+// ========================================
+// 10. SAVE A NEW TRANSACTION
+// ========================================
+
+// Get the transaction form
+const transactionFormElement = document.getElementById("transaction-form");
+
+// Listen for form submission
+transactionFormElement.addEventListener("submit", async function (event) {
+  // Stop the page from refreshing automatically
+  event.preventDefault();
+
+  // Collect information from the form
+  const description = document.getElementById("description").value;
+  const amount = Number(document.getElementById("amount").value);
+  const date = document.getElementById("date").value;
+  const type = document.getElementById("type").value;
+  const categoryId = Number(document.getElementById("category").value);
+
+  // Prepare the transaction data
+  const transactionData = {
+    description: description,
+    amount: amount,
+    date: date,
+    type: type,
+    category_id: categoryId,
+  };
+
+  try {
+    // Send the transaction to the backend
+    const response = await fetch("http://127.0.0.1:8000/transactions", {
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+
+      body: JSON.stringify(transactionData),
+    });
+
+    // Check whether the transaction was saved
+    if (!response.ok) {
+      const errorData = await response.json();
+
+      alert(errorData.detail || "Could not save transaction.");
+
+      return;
+    }
+
+    // Show success message
+    alert("Transaction added successfully!");
+
+    // Refresh the form and dashboard
+    transactionFormElement.reset();
+
+    window.location.reload();
+  } catch (error) {
+    console.error("Error saving transaction:", error);
+
+    alert("Something went wrong. Please try again.");
+  }
+});
+
+// ========================================
+// 11. LOGOUT
 // ========================================
 
 const logoutLink = document.getElementById("logout-link");
