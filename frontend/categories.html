@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Categories | Vundla Finance</title>
+    <script src="js/categories.js" defer></script>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+
+  <body>
+    <!-- Website Header -->
+    <header class="site-header">
+      <h1>Vundla Finance</h1>
+    </header>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <nav class="sidebar-nav">
+        <a class="nav-link" href="dashboard.html">Dashboard</a>
+        <a class="nav-link" href="transactional.html">Transactions</a>
+        <a class="nav-link" href="budgets.html">Budgets</a>
+        <a class="nav-link" href="categories.html">Categories</a>
+        <a class="nav-link" href="#" id="logout-link">Logout</a>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+      <section>
+        <h2>Category Management</h2>
+        <p>Create and manage your income and expense categories.</p>
+      </section>
+
+      <!-- Add Category -->
+      <section>
+        <h2>Add New Category</h2>
+
+        <form id="category-form">
+          <label for="category-name">Category Name</label>
+          <input
+            type="text"
+            id="category-name"
+            placeholder="e.g. Groceries"
+            required
+          />
+
+          <label for="category-type">Category Type</label>
+          <select id="category-type" required>
+            <option value="">Select type</option>
+            <option value="Income">Income</option>
+            <option value="Expense">Expense</option>
+          </select>
+
+          <button type="submit">Save Category</button>
+        </form>
+      </section>
+
+      <!-- Existing Categories -->
+      <section>
+        <h2>Your Categories</h2>
+
+        <div class="transactions-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Category Name</th>
+                <th>Type</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+
+            <tbody id="categories-list"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+      <p>&copy; 2026 Vundla Finance. All rights reserved.</p>
+    </footer>
+  </body>
+</html>
