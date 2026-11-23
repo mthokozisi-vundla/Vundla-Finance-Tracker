@@ -8,13 +8,14 @@
     <script src="js/dashboard.js" defer></script>
     <link rel="stylesheet" href="css/style.css" />
   </head>
+
   <body>
-    <!--Website Header-->
+    <!-- Website Header -->
     <header class="site-header">
       <h1>Vundla Finance</h1>
     </header>
 
-    <!--Dashboard Sidebar-->
+    <!-- Dashboard Sidebar -->
     <aside class="sidebar">
       <nav class="sidebar-nav">
         <a class="nav-link" href="dashboard.html">Dashboard</a>
@@ -25,131 +26,62 @@
       </nav>
     </aside>
 
-    <!--Main Dashboard Content-->
+    <!-- Main Dashboard Content -->
     <main class="dashboard-main">
-      <!--Dashboard Welcome-->
+      <!-- Dashboard Welcome -->
       <section>
         <h2>Dashboard Overview</h2>
-        <p>Welcome back! Here"s your financial overview</p>
+        <p>Welcome back! Here's your financial overview</p>
       </section>
 
-      <!--Financial Summary Section-->
+      <!-- Financial Summary Section -->
       <section class="financial-summary">
         <h2>Financial Summary</h2>
 
-        <!--Total Income Card-->
+        <!-- Total Income Card -->
         <article class="summary-card">
           <h3>Total Income</h3>
           <p id="total-income">R0.00</p>
         </article>
 
-        <!--Total Expenses Card-->
+        <!-- Total Expenses Card -->
         <article class="summary-card">
           <h3>Total Expenses</h3>
           <p id="total-expenses">R0.00</p>
         </article>
 
-        <!--Remaining Balance Card-->
+        <!-- Remaining Balance Card -->
         <article class="summary-card">
           <h3>Remaining Balance</h3>
           <p id="remaining-balance">R0.00</p>
         </article>
 
-        <!--Monthly Budget Card-->
+        <!-- Monthly Budget Card -->
         <article class="summary-card">
           <h3>Monthly Budget</h3>
           <p>R8,000.00</p>
         </article>
       </section>
 
-      <!--Financial Charts section-->
+      <!-- Financial Charts Section -->
       <section>
         <h2>Financial Reports</h2>
 
-        <!--Income vs expenses Chart-->
+        <!-- Income vs Expenses Chart -->
         <article>
           <h3>Income vs Expenses</h3>
-
           <canvas id="income-expenses-chart"></canvas>
         </article>
 
-        <!--Spending by category Chart-->
+        <!-- Spending by Category Chart -->
         <article>
           <h3>Spending by Category</h3>
-
           <canvas id="category-spending-chart"></canvas>
         </article>
       </section>
-      <!--Recent Transactions Section-->
-      <section class="recent-transactions">
-        <h2>Recent Transactions</h2>
-
-        <button id="add-transaction-btn">Add Transaction</button>
-        <!-- Add Transaction Form -->
-        <form id="transaction-form" style="display: none">
-          <h3>Add New Transaction</h3>
-
-          <!-- Description -->
-          <label for="description">Description</label>
-          <input
-            type="text"
-            id="description"
-            placeholder="e.g. Groceries"
-            required
-          />
-
-          <!-- Amount -->
-          <label for="amount">Amount (R)</label>
-          <input
-            type="number"
-            id="amount"
-            placeholder="e.g. 500"
-            min="0.01"
-            step="0.01"
-            required
-          />
-
-          <!-- Date -->
-          <label for="date">Date</label>
-          <input type="date" id="date" required />
-
-          <!-- Transaction Type -->
-          <label for="type">Transaction Type</label>
-          <select id="type" required>
-            <option value="">Select type</option>
-            <option value="Income">Income</option>
-            <option value="Expense">Expense</option>
-          </select>
-
-          <!-- Category -->
-          <label for="category">Category</label>
-          <select id="category" required>
-            <option value="">Select category</option>
-          </select>
-
-          <button type="submit">Save Transaction</button>
-          <button type="button" id="cancel-transaction-btn">Cancel</button>
-        </form>
-
-        <div class="transactions-table">
-          <table>
-            <thead>
-              <tr>
-                <th>Description</th>
-                <th>Category</th>
-                <th>Date</th>
-                <th>Type</th>
-                <th>Amount</th>
-              </tr>
-            </thead>
-
-            <tbody id="transactions-list"></tbody>
-          </table>
-        </div>
-      </section>
     </main>
 
-    <!--Website Footer-->
+    <!-- Website Footer -->
     <footer class="site-footer">
       <p>&copy; 2026 Vundla Finance. All rights reserved.</p>
     </footer>
