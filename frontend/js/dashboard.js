@@ -7,7 +7,10 @@ if (!token) {
 
 // GET TRANSACTIONS FROM BACKEND
 
+// GET TRANSACTIONS FROM BACKEND
+
 async function getTransactions() {
+  // Get transactions from the backend
   const response = await fetch("http://127.0.0.1:8000/transactions", {
     method: "GET",
     headers: {
@@ -17,6 +20,16 @@ async function getTransactions() {
 
   const transactions = await response.json();
 
+  // Get categories from the backend
+  const categoryResponse = await fetch("http://127.0.0.1:8000/categories", {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const categories = await categoryResponse.json();
+
   // Get the table body
   const transactionsList = document.getElementById("transactions-list");
 
@@ -25,19 +38,25 @@ async function getTransactions() {
 
   // Add each transaction to the table
   transactions.forEach(function (transaction) {
+    // Find the category that matches this transaction
+    const category = categories.find(function (category) {
+      return category.id === transaction.category_id;
+    });
+
     const row = document.createElement("tr");
 
     row.innerHTML = `
-        <td>${transaction.description}</td>
-        <td>${transaction.category_id}</td>
-        <td>${transaction.date}</td>
-        <td>${transaction.type}</td>
-        <td>R${Number(transaction.amount).toFixed(2)}</td>
+      <td>${transaction.description}</td>
+      <td>${category ? category.name : "Unknown category"}</td>
+      <td>${transaction.date}</td>
+      <td>${transaction.type}</td>
+      <td>R${Number(transaction.amount).toFixed(2)}</td>
     `;
 
     transactionsList.appendChild(row);
   });
 }
+
 getTransactions();
 
 //------------------
