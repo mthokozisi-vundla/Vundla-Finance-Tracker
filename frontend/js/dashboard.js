@@ -138,8 +138,10 @@ async function getTransactions() {
     // 6. DISPLAY TRANSACTIONS IN THE TABLE
     // ========================================
 
+    // Get the transactions table body
     const transactionsList = document.getElementById("transactions-list");
 
+    // Clear the existing table rows
     transactionsList.innerHTML = "";
 
     transactions.forEach(function (transaction) {
@@ -156,7 +158,65 @@ async function getTransactions() {
         <td>${transaction.date}</td>
         <td>${transaction.type}</td>
         <td>R${Number(transaction.amount).toFixed(2)}</td>
+        <td>
+          <button class="delete-transaction-btn" data-id="${transaction.id}">
+            Delete
+          </button>
+        </td>
       `;
+
+      // Get the Delete button for this transaction
+      const deleteButton = row.querySelector(".delete-transaction-btn");
+
+      // Listen for Delete button clicks
+      deleteButton.addEventListener("click", async function () {
+        // Ask the user to confirm deletion
+        const confirmed = confirm(
+          "Are you sure you want to delete this transaction?",
+        );
+
+        if (!confirmed) {
+          return;
+        }
+
+        try {
+          // Send the delete request to the backend
+          const deleteResponse = await fetch(
+            `http://127.0.0.1:8000/transactions/${transaction.id}`,
+            {
+              method: "DELETE",
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            },
+          );
+
+          // Check whether deletion was successful
+          if (!deleteResponse.ok) {
+            if (deleteResponse.status === 401) {
+              localStorage.removeItem("access_token");
+              window.location.href = "login.html";
+              return;
+            }
+
+            const errorData = await deleteResponse.json();
+
+            alert(errorData.detail || "Could not delete transaction.");
+
+            return;
+          }
+
+          // Show success message
+          alert("Transaction deleted successfully!");
+
+          // Reload dashboard to update totals, charts and table
+          window.location.reload();
+        } catch (error) {
+          console.error("Error deleting transaction:", error);
+
+          alert("Something went wrong while deleting the transaction.");
+        }
+      });
 
       transactionsList.appendChild(row);
     });
@@ -263,7 +323,10 @@ async function getTransactions() {
   }
 }
 
-// Run the dashboard function
+// ========================================
+// RUN THE DASHBOARD FUNCTION
+// ========================================
+
 getTransactions();
 
 // ========================================
