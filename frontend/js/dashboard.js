@@ -1,168 +1,270 @@
-// Check whether the user is logged in
+// ========================================
+// 1. CHECK WHETHER THE USER IS LOGGED IN
+// ========================================
+
 const token = localStorage.getItem("access_token");
 
 if (!token) {
   window.location.href = "login.html";
 }
 
-// GET TRANSACTIONS FROM BACKEND
-
-// GET TRANSACTIONS FROM BACKEND
+// ========================================
+// 2. GET TRANSACTIONS FROM BACKEND
+// ========================================
 
 async function getTransactions() {
-  // Get transactions from the backend
-  const response = await fetch("http://127.0.0.1:8000/transactions", {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  const transactions = await response.json();
-
-  // Get categories from the backend
-  const categoryResponse = await fetch("http://127.0.0.1:8000/categories", {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  const categories = await categoryResponse.json();
-  // Calculate total income and expenses
-  let totalIncome = 0;
-  let totalExpenses = 0;
-
-  // Go through every transaction
-  transactions.forEach(function (transaction) {
-    if (transaction.type === "Income") {
-      totalIncome += Number(transaction.amount);
-    } else if (transaction.type === "Expense") {
-      totalExpenses += Number(transaction.amount);
-    }
-  });
-
-  // Calculate remaining balance
-  const remainingBalance = totalIncome - totalExpenses;
-
-  // Update the dashboard cards
-  document.getElementById("total-income").textContent =
-    `R${totalIncome.toFixed(2)}`;
-
-  document.getElementById("total-expenses").textContent =
-    `R${totalExpenses.toFixed(2)}`;
-
-  document.getElementById("remaining-balance").textContent =
-    `R${remainingBalance.toFixed(2)}`;
-
-  // Get the table body
-  const transactionsList = document.getElementById("transactions-list");
-
-  // Clear the table
-  transactionsList.innerHTML = "";
-
-  // Add each transaction to the table
-  transactions.forEach(function (transaction) {
-    // Find the category that matches this transaction
-    const category = categories.find(function (category) {
-      return category.id === transaction.category_id;
+  try {
+    // Get transactions from the backend
+    const response = await fetch("http://127.0.0.1:8000/transactions", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     });
 
-    const row = document.createElement("tr");
+    if (!response.ok) {
+      if (response.status === 401) {
+        localStorage.removeItem("access_token");
+        window.location.href = "login.html";
+        return;
+      }
 
-    row.innerHTML = `
-      <td>${transaction.description}</td>
-      <td>${category ? category.name : "Unknown category"}</td>
-      <td>${transaction.date}</td>
-      <td>${transaction.type}</td>
-      <td>R${Number(transaction.amount).toFixed(2)}</td>
-    `;
+      throw new Error("Could not load transactions.");
+    }
 
-    transactionsList.appendChild(row);
-  });
+    const transactions = await response.json();
+
+    // Get categories from the backend
+    const categoryResponse = await fetch("http://127.0.0.1:8000/categories", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!categoryResponse.ok) {
+      throw new Error("Could not load categories.");
+    }
+
+    const categories = await categoryResponse.json();
+
+    // ========================================
+    // 3. PREPARE MONTHLY TOTALS
+    // ========================================
+
+    const months = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
+
+    const monthlyIncome = Array(12).fill(0);
+    const monthlyExpenses = Array(12).fill(0);
+
+    // ========================================
+    // 4. CALCULATE TOTAL INCOME AND EXPENSES
+    // ========================================
+
+    let totalIncome = 0;
+    let totalExpenses = 0;
+
+    const currentYear = new Date().getFullYear();
+
+    transactions.forEach(function (transaction) {
+      const amount = Number(transaction.amount);
+
+      // Calculate overall totals
+      if (transaction.type === "Income") {
+        totalIncome += amount;
+      } else if (transaction.type === "Expense") {
+        totalExpenses += amount;
+      }
+
+      // Get transaction month and year
+      const transactionDate = new Date(transaction.date + "T00:00:00");
+
+      const monthIndex = transactionDate.getMonth();
+      const transactionYear = transactionDate.getFullYear();
+
+      // Add transaction to the correct month
+      if (transactionYear === currentYear) {
+        if (transaction.type === "Income") {
+          monthlyIncome[monthIndex] += amount;
+        } else if (transaction.type === "Expense") {
+          monthlyExpenses[monthIndex] += amount;
+        }
+      }
+    });
+
+    // Calculate remaining balance
+    const remainingBalance = totalIncome - totalExpenses;
+
+    // ========================================
+    // 5. UPDATE DASHBOARD SUMMARY CARDS
+    // ========================================
+
+    document.getElementById("total-income").textContent =
+      `R${totalIncome.toFixed(2)}`;
+
+    document.getElementById("total-expenses").textContent =
+      `R${totalExpenses.toFixed(2)}`;
+
+    document.getElementById("remaining-balance").textContent =
+      `R${remainingBalance.toFixed(2)}`;
+
+    // ========================================
+    // 6. DISPLAY TRANSACTIONS IN THE TABLE
+    // ========================================
+
+    const transactionsList = document.getElementById("transactions-list");
+
+    transactionsList.innerHTML = "";
+
+    transactions.forEach(function (transaction) {
+      // Find the matching category
+      const category = categories.find(function (category) {
+        return category.id === transaction.category_id;
+      });
+
+      const row = document.createElement("tr");
+
+      row.innerHTML = `
+        <td>${transaction.description}</td>
+        <td>${category ? category.name : "Unknown category"}</td>
+        <td>${transaction.date}</td>
+        <td>${transaction.type}</td>
+        <td>R${Number(transaction.amount).toFixed(2)}</td>
+      `;
+
+      transactionsList.appendChild(row);
+    });
+
+    // ========================================
+    // 7. INCOME VS EXPENSES BAR CHART
+    // ========================================
+
+    const incomeExpensesCanvas = document.getElementById(
+      "income-expenses-chart",
+    );
+
+    if (incomeExpensesCanvas) {
+      const incomeExpensesContext = incomeExpensesCanvas.getContext("2d");
+
+      new Chart(incomeExpensesContext, {
+        type: "bar",
+
+        data: {
+          labels: months,
+
+          datasets: [
+            {
+              label: "Income",
+              data: monthlyIncome,
+            },
+            {
+              label: "Expenses",
+              data: monthlyExpenses,
+            },
+          ],
+        },
+
+        options: {
+          responsive: true,
+
+          scales: {
+            y: {
+              beginAtZero: true,
+            },
+          },
+        },
+      });
+    }
+
+    // ========================================
+    // 8. SPENDING BY CATEGORY DOUGHNUT CHART
+    // ========================================
+
+    // Get expense transactions only
+    const expenseTransactions = transactions.filter(function (transaction) {
+      return transaction.type === "Expense";
+    });
+
+    // Store spending for each category
+    const categorySpending = {};
+
+    expenseTransactions.forEach(function (transaction) {
+      const category = categories.find(function (category) {
+        return category.id === transaction.category_id;
+      });
+
+      const categoryName = category ? category.name : "Unknown category";
+
+      if (!categorySpending[categoryName]) {
+        categorySpending[categoryName] = 0;
+      }
+
+      categorySpending[categoryName] += Number(transaction.amount);
+    });
+
+    // Convert category totals into chart arrays
+    const categoryLabels = Object.keys(categorySpending);
+    const categoryAmounts = Object.values(categorySpending);
+
+    const categorySpendingCanvas = document.getElementById(
+      "category-spending-chart",
+    );
+
+    if (categorySpendingCanvas) {
+      const categorySpendingContext = categorySpendingCanvas.getContext("2d");
+
+      new Chart(categorySpendingContext, {
+        type: "doughnut",
+
+        data: {
+          labels: categoryLabels,
+
+          datasets: [
+            {
+              label: "Spending",
+              data: categoryAmounts,
+            },
+          ],
+        },
+
+        options: {
+          responsive: true,
+        },
+      });
+    }
+  } catch (error) {
+    console.error("Dashboard error:", error);
+  }
 }
 
+// Run the dashboard function
 getTransactions();
 
-//------------------
-// 1. Income vs Expense Chart
-//-----------------
-
-//Get the canvas element from the Html page
-const incomeExpensesCanvas = document.getElementById("income-expenses-chart");
-
-//Get the drawing context from the canvas
-const incomeExpensescontent = incomeExpensesCanvas.getContext("2d");
-
-//Create the Income vs Expenses chart
-const incomeExpensesChart = new Chart(incomeExpensescontent, {
-  type: "bar",
-
-  data: {
-    labels: ["January", "February", "March"],
-
-    datasets: [
-      {
-        label: "Income",
-        data: [12000, 15000, 18000],
-      },
-      {
-        label: "Expenses",
-        data: [4500, 6000, 7500],
-      },
-    ],
-  },
-
-  options: {
-    responsive: true,
-
-    scale: {
-      y: {
-        beginAtZero: true,
-      },
-    },
-  },
-});
-
-//-------------
-// 2. Spending by Category Chart
-//------------
-
-//Get the category spending canvas
-const categorySpendingCanvas = document.getElementById(
-  "category-spending-chart",
-);
-
-//Get the drawing context
-const categorySpendingContext = categorySpendingCanvas.getContext("2d");
-//Create the spending by Category chart
-const categorySpendingChart = new Chart(categorySpendingContext, {
-  type: "doughnut",
-
-  data: {
-    labels: ["Food", "Transport", "Entertainment", "Rent"],
-
-    datasets: [
-      {
-        label: "Spending",
-        data: [2000, 1000, 500, 4000],
-      },
-    ],
-  },
-
-  options: {
-    responsive: true,
-  },
-});
-
-// LOGOUT
+// ========================================
+// 9. LOGOUT
+// ========================================
 
 const logoutLink = document.getElementById("logout-link");
 
-logoutLink.addEventListener("click", function (event) {
-  event.preventDefault();
+if (logoutLink) {
+  logoutLink.addEventListener("click", function (event) {
+    event.preventDefault();
 
-  localStorage.removeItem("access_token");
+    localStorage.removeItem("access_token");
 
-  window.location.href = "login.html";
-});
+    window.location.href = "login.html";
+  });
+}
