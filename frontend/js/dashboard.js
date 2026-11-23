@@ -29,6 +29,31 @@ async function getTransactions() {
   });
 
   const categories = await categoryResponse.json();
+  // Calculate total income and expenses
+  let totalIncome = 0;
+  let totalExpenses = 0;
+
+  // Go through every transaction
+  transactions.forEach(function (transaction) {
+    if (transaction.type === "Income") {
+      totalIncome += Number(transaction.amount);
+    } else if (transaction.type === "Expense") {
+      totalExpenses += Number(transaction.amount);
+    }
+  });
+
+  // Calculate remaining balance
+  const remainingBalance = totalIncome - totalExpenses;
+
+  // Update the dashboard cards
+  document.getElementById("total-income").textContent =
+    `R${totalIncome.toFixed(2)}`;
+
+  document.getElementById("total-expenses").textContent =
+    `R${totalExpenses.toFixed(2)}`;
+
+  document.getElementById("remaining-balance").textContent =
+    `R${remainingBalance.toFixed(2)}`;
 
   // Get the table body
   const transactionsList = document.getElementById("transactions-list");
