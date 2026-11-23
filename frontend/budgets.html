@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Budgets | Vundla Finance</title>
+    <script src="js/budgets.js" defer></script>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+
+  <body>
+    <!-- Website Header -->
+    <header class="site-header">
+      <h1>Vundla Finance</h1>
+    </header>
+
+    <!-- Dashboard Sidebar -->
+    <aside class="sidebar">
+      <nav class="sidebar-nav">
+        <a class="nav-link" href="dashboard.html">Dashboard</a>
+        <a class="nav-link" href="transactional.html">Transactions</a>
+        <a class="nav-link" href="budgets.html">Budgets</a>
+        <a class="nav-link" href="categories.html">Categories</a>
+        <a class="nav-link" href="#" id="logout-link">Logout</a>
+      </nav>
+    </aside>
+
+    <!-- Main Budgets Content -->
+    <main class="dashboard-main">
+      <!-- Page Introduction -->
+      <section>
+        <h2>Monthly Budgets</h2>
+        <p>Set spending limits and keep track of your money.</p>
+      </section>
+
+      <!-- Create Budget Section -->
+      <section>
+        <h2 id="budget-form-heading">Create Monthly Budget</h2>
+
+        <form id="budget-form">
+          <label for="budget-category">Category</label>
+          <select id="budget-category" required>
+            <option value="">Select category</option>
+          </select>
+
+          <label for="budget-amount">Budget Amount (R)</label>
+          <input
+            type="number"
+            id="budget-amount"
+            placeholder="e.g. 1500"
+            min="0.01"
+            step="0.01"
+            required
+          />
+
+          <label for="budget-month">Month</label>
+          <select id="budget-month" required>
+            <option value="">Select month</option>
+            <option value="1">January</option>
+            <option value="2">February</option>
+            <option value="3">March</option>
+            <option value="4">April</option>
+            <option value="5">May</option>
+            <option value="6">June</option>
+            <option value="7">July</option>
+            <option value="8">August</option>
+            <option value="9">September</option>
+            <option value="10">October</option>
+            <option value="11">November</option>
+            <option value="12">December</option>
+          </select>
+
+          <label for="budget-year">Year</label>
+          <input
+            type="number"
+            id="budget-year"
+            min="2020"
+            max="2100"
+            required
+          />
+
+          <button type="submit" id="budget-submit-btn">Save Budget</button>
+
+          <button type="button" id="cancel-budget-btn" style="display: none">
+            Cancel
+          </button>
+        </form>
+      </section>
+
+      <!-- Display Budgets -->
+      <section>
+        <h2>Your Budgets</h2>
+
+        <div id="budgets-list">
+          <!-- Budgets will be displayed here by JavaScript -->
+        </div>
+      </section>
+    </main>
+
+    <!-- Website Footer -->
+    <footer class="site-footer">
+      <p>&copy; 2026 Vundla Finance. All rights reserved.</p>
+    </footer>
+  </body>
+</html>

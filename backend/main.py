@@ -1,6 +1,8 @@
+
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+from sqlalchemy import func, extract
 
 from schemas import UserCreate, UserLogin, Transaction, CategoryCreate, BudgetCreate
 from database import get_db
@@ -13,7 +15,7 @@ from models import (
 from security import hash_password, verify_password
 from auth import create_access_token, verify_access_token
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy import func
+
 
 security = HTTPBearer()
 
@@ -28,14 +30,17 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
+
+# ========================================
+# AUTHENTICATION
+# ========================================
+
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)
 ):
-    # Get the token from the request
     token = credentials.credentials
 
-    # Check whether the token is valid
     payload = verify_access_token(token)
 
     if payload is None:
@@ -44,7 +49,6 @@ def get_current_user(
             detail="Invalid or expired token"
         )
 
-    # Get the user ID stored inside the token
     user_id = payload.get("sub")
 
     if user_id is None:
@@ -53,7 +57,6 @@ def get_current_user(
             detail="Invalid token"
         )
 
-    # Find the user in the database
     try:
         user_id = int(user_id)
     except (TypeError, ValueError):
@@ -74,10 +77,10 @@ def get_current_user(
 
     return user
 
+
 def get_admin_user(
     current_user: UserModel = Depends(get_current_user)
 ):
-    # Check whether the user is an admin
     if current_user.role != "Admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -86,11 +89,17 @@ def get_admin_user(
 
     return current_user
 
+
+# ========================================
+# ADMIN ENDPOINTS
+# ========================================
+
 @app.get("/admin/test")
 def admin_test(
     current_user: UserModel = Depends(get_admin_user)
 ):
     return {"message": "Admin access granted"}
+
 
 @app.get("/admin/statistics")
 def get_admin_statistics(
@@ -110,21 +119,29 @@ def get_admin_statistics(
     }
 
 
+# ========================================
+# GENERAL ENDPOINTS
+# ========================================
+
 @app.get("/")
 def home():
     return {"message": "Welcome to Vundla Finance API"}
+
 
 @app.get("/health")
 def health_check():
     return {"status": "Vundla Finance API is running"}
 
 
+# ========================================
+# USER REGISTRATION
+# ========================================
+
 @app.post("/register", status_code=status.HTTP_201_CREATED)
 def register_user(
     user: UserCreate,
     db: Session = Depends(get_db)
 ):
-    # Check whether the email is already registered
     existing_user = db.query(UserModel).filter(
         UserModel.email == user.email
     ).first()
@@ -135,10 +152,8 @@ def register_user(
             detail="Email address is already registered"
         )
 
-    # Hash the user's password
     hashed_password = hash_password(user.password)
 
-    # Create the new user
     new_user = UserModel(
         name=user.name,
         email=user.email,
@@ -165,18 +180,20 @@ def register_user(
         }
     }
 
+
+# ========================================
+# USER LOGIN
+# ========================================
+
 @app.post("/login")
 def login_user(
     credentials: UserLogin,
     db: Session = Depends(get_db)
 ):
-    # Find the user by email
     user = db.query(UserModel).filter(
         UserModel.email == credentials.email
     ).first()
 
-
-    # Check the password
     if user is None or not verify_password(
         credentials.password,
         user.hashed_password
@@ -187,12 +204,10 @@ def login_user(
             headers={"WWW-Authenticate": "Bearer"}
         )
 
-    # Create an access token
     access_token = create_access_token({
         "sub": str(user.id)
     })
 
-    # Return the login information
     return {
         "access_token": access_token,
         "token_type": "bearer",
@@ -205,13 +220,16 @@ def login_user(
     }
 
 
+# ========================================
+# CREATE TRANSACTION
+# ========================================
+
 @app.post("/transactions")
 def create_transaction(
     transaction: Transaction,
     db: Session = Depends(get_db),
     current_user: UserModel = Depends(get_current_user)
 ):
-    # Check whether the category exists and belongs to this user
     category = db.query(CategoryModel).filter(
         CategoryModel.id == transaction.category_id,
         CategoryModel.user_id == current_user.id
@@ -223,7 +241,6 @@ def create_transaction(
             detail="Category not found"
         )
 
-    # Create the new transaction
     new_transaction = TransactionModel(
         description=transaction.description,
         amount=transaction.amount,
@@ -243,6 +260,9 @@ def create_transaction(
     }
 
 
+# ========================================
+# GET ALL TRANSACTIONS
+# ========================================
 
 @app.get("/transactions")
 def get_transactions(
@@ -255,6 +275,10 @@ def get_transactions(
 
     return transactions
 
+
+# ========================================
+# GET ONE TRANSACTION
+# ========================================
 
 @app.get("/transactions/{transaction_id}")
 def get_transaction(
@@ -275,6 +299,11 @@ def get_transaction(
 
     return transaction
 
+
+# ========================================
+# UPDATE TRANSACTION
+# ========================================
+
 @app.put("/transactions/{transaction_id}")
 def update_transaction(
     transaction_id: int,
@@ -282,7 +311,6 @@ def update_transaction(
     db: Session = Depends(get_db),
     current_user: UserModel = Depends(get_current_user)
 ):
-    # Find the transaction and check ownership
     transaction = db.query(TransactionModel).filter(
         TransactionModel.id == transaction_id,
         TransactionModel.user_id == current_user.id
@@ -294,7 +322,6 @@ def update_transaction(
             detail="Transaction not found"
         )
 
-    # Check that the new category belongs to this user
     category = db.query(CategoryModel).filter(
         CategoryModel.id == transaction_data.category_id,
         CategoryModel.user_id == current_user.id
@@ -306,7 +333,6 @@ def update_transaction(
             detail="Category not found"
         )
 
-    # Update transaction information
     transaction.description = transaction_data.description
     transaction.amount = transaction_data.amount
     transaction.type = transaction_data.type
@@ -322,13 +348,16 @@ def update_transaction(
     }
 
 
+# ========================================
+# DELETE TRANSACTION
+# ========================================
+
 @app.delete("/transactions/{transaction_id}")
 def delete_transaction(
     transaction_id: int,
     db: Session = Depends(get_db),
     current_user: UserModel = Depends(get_current_user)
 ):
-    # Find the transaction and check ownership
     transaction = db.query(TransactionModel).filter(
         TransactionModel.id == transaction_id,
         TransactionModel.user_id == current_user.id
@@ -340,7 +369,6 @@ def delete_transaction(
             detail="Transaction not found"
         )
 
-    # Delete the transaction
     db.delete(transaction)
     db.commit()
 
@@ -348,6 +376,10 @@ def delete_transaction(
         "message": "Transaction deleted successfully"
     }
 
+
+# ========================================
+# CREATE CATEGORY
+# ========================================
 
 @app.post("/categories")
 def create_category(
@@ -371,6 +403,9 @@ def create_category(
     }
 
 
+# ========================================
+# GET ALL CATEGORIES
+# ========================================
 
 @app.get("/categories")
 def get_categories(
@@ -384,6 +419,9 @@ def get_categories(
     return categories
 
 
+# ========================================
+# GET ONE CATEGORY
+# ========================================
 
 @app.get("/categories/{category_id}")
 def get_category(
@@ -405,6 +443,10 @@ def get_category(
     return category
 
 
+# ========================================
+# DELETE CATEGORY
+# ========================================
+
 @app.delete("/categories/{category_id}")
 def delete_category(
     category_id: int,
@@ -422,7 +464,6 @@ def delete_category(
             detail="Category not found"
         )
 
-    # Check whether transactions use this category
     transaction = db.query(TransactionModel).filter(
         TransactionModel.category_id == category_id
     ).first()
@@ -433,7 +474,6 @@ def delete_category(
             detail="Cannot delete category because it has transactions"
         )
 
-    # Check whether budgets use this category
     budget = db.query(BudgetModel).filter(
         BudgetModel.category_id == category_id
     ).first()
@@ -451,6 +491,10 @@ def delete_category(
         "message": "Category deleted successfully"
     }
 
+
+# ========================================
+# UPDATE CATEGORY
+# ========================================
 
 @app.put("/categories/{category_id}")
 def update_category(
@@ -482,6 +526,9 @@ def update_category(
     }
 
 
+# ========================================
+# CREATE BUDGET
+# ========================================
 
 @app.post("/budgets")
 def create_budget(
@@ -489,7 +536,6 @@ def create_budget(
     db: Session = Depends(get_db),
     current_user: UserModel = Depends(get_current_user)
 ):
-    # Check whether the category belongs to this user
     category = db.query(CategoryModel).filter(
         CategoryModel.id == budget.category_id,
         CategoryModel.user_id == current_user.id
@@ -501,7 +547,6 @@ def create_budget(
             detail="Category not found"
         )
 
-    # Create the budget
     new_budget = BudgetModel(
         amount=budget.amount,
         month=budget.month,
@@ -520,6 +565,10 @@ def create_budget(
     }
 
 
+# ========================================
+# GET ALL BUDGETS
+# ========================================
+
 @app.get("/budgets")
 def get_budgets(
     db: Session = Depends(get_db),
@@ -530,6 +579,63 @@ def get_budgets(
     ).all()
 
     return budgets
+
+
+# ========================================
+# GET BUDGETS WITH SPENDING INFORMATION
+# ========================================
+
+@app.get("/budgets/summary")
+def get_budget_summaries(
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    # Get all budgets belonging to the logged-in user
+    budgets = db.query(BudgetModel).filter(
+        BudgetModel.user_id == current_user.id
+    ).all()
+
+    budget_summaries = []
+
+    # Calculate spending for each budget
+    for budget in budgets:
+
+        # Find Expense transactions for this category and month
+        spent = db.query(
+            func.coalesce(func.sum(TransactionModel.amount), 0)
+        ).filter(
+            TransactionModel.user_id == current_user.id,
+            TransactionModel.category_id == budget.category_id,
+            TransactionModel.type == "Expense",
+            extract("month", TransactionModel.date) == budget.month,
+            extract("year", TransactionModel.date) == budget.year
+        ).scalar()
+
+        # Calculate the remaining budget
+        remaining = float(budget.amount) - float(spent)
+
+        # Calculate percentage used
+        percentage = (float(spent) / float(budget.amount)) * 100
+
+        # Store the budget information
+        budget_summaries.append({
+            "id": budget.id,
+            "category_id": budget.category_id,
+            "category_name": budget.category.name,
+            "amount": float(budget.amount),
+            "month": budget.month,
+            "year": budget.year,
+            "spent": float(spent),
+            "remaining": remaining,
+            "percentage": round(percentage, 2)
+        })
+
+    return budget_summaries
+
+
+# ========================================
+# GET ONE BUDGET
+# ========================================
 
 @app.get("/budgets/{budget_id}")
 def get_budget(
@@ -550,6 +656,11 @@ def get_budget(
 
     return budget
 
+
+# ========================================
+# UPDATE BUDGET
+# ========================================
+
 @app.put("/budgets/{budget_id}")
 def update_budget(
     budget_id: int,
@@ -557,7 +668,6 @@ def update_budget(
     db: Session = Depends(get_db),
     current_user: UserModel = Depends(get_current_user)
 ):
-    # Find the budget and check ownership
     existing_budget = db.query(BudgetModel).filter(
         BudgetModel.id == budget_id,
         BudgetModel.user_id == current_user.id
@@ -569,7 +679,6 @@ def update_budget(
             detail="Budget not found"
         )
 
-    # Check whether the new category belongs to this user
     category = db.query(CategoryModel).filter(
         CategoryModel.id == budget.category_id,
         CategoryModel.user_id == current_user.id
@@ -581,7 +690,6 @@ def update_budget(
             detail="Category not found"
         )
 
-    # Update the budget
     existing_budget.amount = budget.amount
     existing_budget.month = budget.month
     existing_budget.year = budget.year
@@ -595,13 +703,17 @@ def update_budget(
         "budget": existing_budget.id
     }
 
+
+# ========================================
+# DELETE BUDGET
+# ========================================
+
 @app.delete("/budgets/{budget_id}")
 def delete_budget(
     budget_id: int,
     db: Session = Depends(get_db),
     current_user: UserModel = Depends(get_current_user)
 ):
-    # Find the budget and check ownership
     budget = db.query(BudgetModel).filter(
         BudgetModel.id == budget_id,
         BudgetModel.user_id == current_user.id
@@ -613,11 +725,10 @@ def delete_budget(
             detail="Budget not found"
         )
 
-    # Delete the budget
     db.delete(budget)
     db.commit()
 
     return {
         "message": "Budget deleted successfully",
         "budget": budget_id
-    } 
+    }

@@ -8,14 +8,30 @@ if (!token) {
   window.location.href = "login.html";
 }
 
-// Get the budget form
 const budgetForm = document.getElementById("budget-form");
-
-// Get the budgets display area
 const budgetsList = document.getElementById("budgets-list");
 
+// Store categories
+let categories = [];
+
+// Month names
+const monthNames = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
 // ========================================
-// 2. GET EXPENSE CATEGORIES FROM BACKEND
+// 2. GET EXPENSE CATEGORIES
 // ========================================
 
 async function getExpenseCategories() {
@@ -37,20 +53,16 @@ async function getExpenseCategories() {
       throw new Error("Could not load categories.");
     }
 
-    const categories = await response.json();
+    categories = await response.json();
 
-    // Keep only Expense categories
     const expenseCategories = categories.filter(function (category) {
       return category.type === "Expense";
     });
 
-    // Get the category dropdown
     const categoryDropdown = document.getElementById("budget-category");
 
-    // Clear existing options
     categoryDropdown.innerHTML = '<option value="">Select category</option>';
 
-    // Add Expense categories to the dropdown
     expenseCategories.forEach(function (category) {
       const option = document.createElement("option");
 
@@ -60,18 +72,19 @@ async function getExpenseCategories() {
       categoryDropdown.appendChild(option);
     });
   } catch (error) {
-    console.error("Error loading Expense categories:", error);
+    console.error("Error loading categories:", error);
     alert("Could not load Expense categories.");
   }
 }
 
 // ========================================
-// 3. GET EXISTING BUDGETS
+// 3. GET AND DISPLAY BUDGETS
 // ========================================
 
 async function getBudgets() {
   try {
-    const response = await fetch("http://127.0.0.1:8000/budgets", {
+    // Get budgets together with their spending information
+    const response = await fetch("http://127.0.0.1:8000/budgets/summary", {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -90,10 +103,8 @@ async function getBudgets() {
 
     const budgets = await response.json();
 
-    // Clear the current budget display
     budgetsList.innerHTML = "";
 
-    // Check whether the user has any budgets
     if (budgets.length === 0) {
       budgetsList.textContent = "You have not created any budgets yet.";
       return;
@@ -105,13 +116,97 @@ async function getBudgets() {
 
       budgetCard.classList.add("budget-card");
 
-      budgetCard.innerHTML = `
-        <h3>Budget #${budget.id}</h3>
-        <p>Category ID: ${budget.category_id}</p>
-        <p>Budget Amount: R${Number(budget.amount).toFixed(2)}</p>
-        <p>Month: ${budget.month}</p>
-        <p>Year: ${budget.year}</p>
-      `;
+      // Get the category name from the backend
+      const categoryName = budget.category_name;
+
+      // Convert the month number into a month name
+      const monthName = monthNames[budget.month - 1];
+
+      // Format money values
+      const budgetAmount = Number(budget.amount).toFixed(2);
+      const spentAmount = Number(budget.spent).toFixed(2);
+      const remainingAmount = Number(budget.remaining).toFixed(2);
+
+      // Get the percentage used
+      const percentage = Number(budget.percentage);
+
+      // Create the budget heading
+      const heading = document.createElement("h3");
+      heading.textContent = `${categoryName} Budget`;
+
+      // Create budget information
+      const categoryText = document.createElement("p");
+      categoryText.textContent = `Category: ${categoryName}`;
+
+      const amountText = document.createElement("p");
+      amountText.textContent = `Budget Limit: R${budgetAmount}`;
+
+      const spentText = document.createElement("p");
+      spentText.textContent = `Amount Spent: R${spentAmount}`;
+
+      const remainingText = document.createElement("p");
+      remainingText.textContent = `Remaining Balance: R${remainingAmount}`;
+
+      const monthText = document.createElement("p");
+      monthText.textContent = `Month: ${monthName}`;
+
+      const yearText = document.createElement("p");
+      yearText.textContent = `Year: ${budget.year}`;
+
+      const percentageText = document.createElement("p");
+      percentageText.textContent = `Budget Used: ${percentage.toFixed(2)}%`;
+
+      // ========================================
+      // CREATE THE PROGRESS BAR
+      // ========================================
+
+      const progressContainer = document.createElement("div");
+      progressContainer.classList.add("budget-progress");
+
+      const progressFill = document.createElement("div");
+      progressFill.classList.add("budget-progress-fill");
+
+      // Prevent the progress bar from going beyond 100%
+      const progressWidth = Math.min(Math.max(percentage, 0), 100);
+
+      progressFill.style.width = `${progressWidth}%`;
+
+      progressContainer.appendChild(progressFill);
+
+      // ========================================
+      // CHECK THE BUDGET WARNING LEVEL
+      // ========================================
+
+      const warningText = document.createElement("p");
+
+      if (percentage >= 100) {
+        warningText.textContent =
+          "Warning: You have reached or exceeded your budget limit!";
+        warningText.classList.add("budget-danger");
+      } else if (percentage >= 80) {
+        warningText.textContent =
+          "Warning: You have used 80% or more of this budget.";
+        warningText.classList.add("budget-warning");
+      }
+
+      // ========================================
+      // ADD EVERYTHING TO THE BUDGET CARD
+      // ========================================
+
+      budgetCard.appendChild(heading);
+      budgetCard.appendChild(categoryText);
+      budgetCard.appendChild(amountText);
+      budgetCard.appendChild(spentText);
+      budgetCard.appendChild(remainingText);
+      budgetCard.appendChild(monthText);
+      budgetCard.appendChild(yearText);
+      budgetCard.appendChild(percentageText);
+      budgetCard.appendChild(progressContainer);
+
+      // Only display a warning when necessary
+      if (percentage >= 80) {
+        budgetCard.appendChild(warningText);
+      }
 
       budgetsList.appendChild(budgetCard);
     });
@@ -126,19 +221,13 @@ async function getBudgets() {
 // ========================================
 
 budgetForm.addEventListener("submit", async function (event) {
-  // Stop the page from refreshing
   event.preventDefault();
 
-  // Collect information from the form
   const categoryId = document.getElementById("budget-category").value;
-
   const amount = document.getElementById("budget-amount").value;
-
   const month = document.getElementById("budget-month").value;
-
   const year = document.getElementById("budget-year").value;
 
-  // Prepare the budget data
   const budgetData = {
     category_id: Number(categoryId),
     amount: Number(amount),
@@ -147,7 +236,6 @@ budgetForm.addEventListener("submit", async function (event) {
   };
 
   try {
-    // Send the new budget to the backend
     const response = await fetch("http://127.0.0.1:8000/budgets", {
       method: "POST",
       headers: {
@@ -157,7 +245,6 @@ budgetForm.addEventListener("submit", async function (event) {
       body: JSON.stringify(budgetData),
     });
 
-    // Check whether the request was successful
     if (!response.ok) {
       if (response.status === 401) {
         localStorage.removeItem("access_token");
@@ -172,17 +259,14 @@ budgetForm.addEventListener("submit", async function (event) {
       return;
     }
 
-    // Show success message
     alert("Budget created successfully!");
 
-    // Clear the form
     budgetForm.reset();
 
-    // Reload the budgets
-    getBudgets();
+    // Reload budgets to show the latest spending information
+    await getBudgets();
   } catch (error) {
     console.error("Error creating budget:", error);
-
     alert("Something went wrong while saving the budget.");
   }
 });
@@ -207,5 +291,9 @@ if (logoutLink) {
 // 6. LOAD BUDGET PAGE DATA
 // ========================================
 
-getExpenseCategories();
-getBudgets();
+async function loadBudgetPage() {
+  await getExpenseCategories();
+  await getBudgets();
+}
+
+loadBudgetPage();
