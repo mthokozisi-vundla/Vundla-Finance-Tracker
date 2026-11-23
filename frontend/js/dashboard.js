@@ -8,6 +8,9 @@ if (!token) {
   window.location.href = "login.html";
 }
 
+// Store the ID of the transaction being edited
+let editingTransactionId = null;
+
 // ========================================
 // 2. GET TRANSACTIONS FROM BACKEND
 // ========================================
@@ -159,16 +162,62 @@ async function getTransactions() {
         <td>${transaction.type}</td>
         <td>R${Number(transaction.amount).toFixed(2)}</td>
         <td>
-          <button class="delete-transaction-btn" data-id="${transaction.id}">
+          <button class="edit-transaction-btn">
+            Edit
+          </button>
+
+          <button class="delete-transaction-btn">
             Delete
           </button>
         </td>
       `;
 
-      // Get the Delete button for this transaction
+      // ========================================
+      // EDIT TRANSACTION BUTTON
+      // ========================================
+
+      const editButton = row.querySelector(".edit-transaction-btn");
+
+      editButton.addEventListener("click", function () {
+        // Store the transaction ID
+        editingTransactionId = transaction.id;
+
+        // Fill the form with existing transaction information
+        document.getElementById("description").value = transaction.description;
+
+        document.getElementById("amount").value = transaction.amount;
+
+        document.getElementById("date").value = transaction.date;
+
+        document.getElementById("type").value = transaction.type;
+
+        document.getElementById("category").value = transaction.category_id;
+
+        // Change the form heading
+        document.querySelector("#transaction-form h3").textContent =
+          "Edit Transaction";
+
+        // Change the submit button text
+        document.querySelector(
+          '#transaction-form button[type="submit"]',
+        ).textContent = "Update Transaction";
+
+        // Show the form
+        transactionForm.style.display = "block";
+
+        // Scroll to the form
+        transactionForm.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      });
+
+      // ========================================
+      // DELETE TRANSACTION BUTTON
+      // ========================================
+
       const deleteButton = row.querySelector(".delete-transaction-btn");
 
-      // Listen for Delete button clicks
       deleteButton.addEventListener("click", async function () {
         // Ask the user to confirm deletion
         const confirmed = confirm(
@@ -209,7 +258,7 @@ async function getTransactions() {
           // Show success message
           alert("Transaction deleted successfully!");
 
-          // Reload dashboard to update totals, charts and table
+          // Reload dashboard
           window.location.reload();
         } catch (error) {
           console.error("Error deleting transaction:", error);
@@ -218,6 +267,7 @@ async function getTransactions() {
         }
       });
 
+      // Add row to the table
       transactionsList.appendChild(row);
     });
 
@@ -344,16 +394,40 @@ const cancelTransactionButton = document.getElementById(
 
 // Show the form when Add Transaction is clicked
 addTransactionButton.addEventListener("click", function () {
+  // Make sure we are in Add mode
+  editingTransactionId = null;
+
+  transactionForm.reset();
+
+  document.querySelector("#transaction-form h3").textContent =
+    "Add New Transaction";
+
+  document.querySelector(
+    '#transaction-form button[type="submit"]',
+  ).textContent = "Save Transaction";
+
   transactionForm.style.display = "block";
 });
 
 // Hide the form when Cancel is clicked
 cancelTransactionButton.addEventListener("click", function () {
   transactionForm.style.display = "none";
+
+  // Exit edit mode
+  editingTransactionId = null;
+
+  transactionForm.reset();
+
+  document.querySelector("#transaction-form h3").textContent =
+    "Add New Transaction";
+
+  document.querySelector(
+    '#transaction-form button[type="submit"]',
+  ).textContent = "Save Transaction";
 });
 
 // ========================================
-// 10. SAVE A NEW TRANSACTION
+// 10. SAVE OR UPDATE A TRANSACTION
 // ========================================
 
 // Get the transaction form
@@ -381,20 +455,52 @@ transactionFormElement.addEventListener("submit", async function (event) {
   };
 
   try {
-    // Send the transaction to the backend
-    const response = await fetch("http://127.0.0.1:8000/transactions", {
-      method: "POST",
+    let response;
 
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
+    // Check whether we are editing or creating
+    if (editingTransactionId !== null) {
+      // ========================================
+      // UPDATE EXISTING TRANSACTION
+      // ========================================
 
-      body: JSON.stringify(transactionData),
-    });
+      response = await fetch(
+        `http://127.0.0.1:8000/transactions/${editingTransactionId}`,
+        {
+          method: "PUT",
 
-    // Check whether the transaction was saved
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+
+          body: JSON.stringify(transactionData),
+        },
+      );
+    } else {
+      // ========================================
+      // CREATE NEW TRANSACTION
+      // ========================================
+
+      response = await fetch("http://127.0.0.1:8000/transactions", {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+
+        body: JSON.stringify(transactionData),
+      });
+    }
+
+    // Check whether the request was successful
     if (!response.ok) {
+      if (response.status === 401) {
+        localStorage.removeItem("access_token");
+        window.location.href = "login.html";
+        return;
+      }
+
       const errorData = await response.json();
 
       alert(errorData.detail || "Could not save transaction.");
@@ -402,12 +508,20 @@ transactionFormElement.addEventListener("submit", async function (event) {
       return;
     }
 
-    // Show success message
-    alert("Transaction added successfully!");
+    // Show the correct success message
+    if (editingTransactionId !== null) {
+      alert("Transaction updated successfully!");
+    } else {
+      alert("Transaction added successfully!");
+    }
 
-    // Refresh the form and dashboard
+    // Reset the form
     transactionFormElement.reset();
 
+    // Exit edit mode
+    editingTransactionId = null;
+
+    // Refresh dashboard
     window.location.reload();
   } catch (error) {
     console.error("Error saving transaction:", error);
